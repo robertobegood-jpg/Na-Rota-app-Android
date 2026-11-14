@@ -6,6 +6,11 @@ on:
     tags: [ 'v*' ]
   pull_request:
   workflow_dispatch:
+    inputs:
+      tag:
+        description: "Republicar o release desta tag (ex.: v0.1.0). Deixe vazio para só compilar."
+        required: false
+        default: ""
 
 jobs:
   build:
@@ -16,6 +21,15 @@ jobs:
       KEYSTORE_BASE64: ${{ secrets.KEYSTORE_BASE64 }}
     steps:
       - uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.tag || github.ref }}
+
+      - name: Versão
+        id: v
+        run: |
+          TAG="${{ inputs.tag }}"
+          [ -z "$TAG" ] && TAG="$GITHUB_REF_NAME"
+          echo "tag=$TAG" >> "$GITHUB_OUTPUT"
 
       - uses: actions/setup-java@v5
         with:
@@ -69,8 +83,14 @@ jobs:
           name: na-rota-apks
           path: app/build/outputs/apk/**/*.apk
 
+      - name: Nomear APK como nos outros apps
+        if: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.tag != '' }}
+        run: cp app/build/outputs/apk/release/app-release.apk "NaRota-${{ steps.v.outputs.tag }}.apk"
+
       - name: Publicar release (tags v*)
-        if: startsWith(github.ref, 'refs/tags/v')
+        if: ${{ startsWith(github.ref, 'refs/tags/v') || inputs.tag != '' }}
         uses: softprops/action-gh-release@v2
         with:
-          files: app/build/outputs/apk/release/*.apk
+          tag_name: ${{ steps.v.outputs.tag }}
+          name: Na Rota ${{ steps.v.outputs.tag }}
+          files: NaRota-${{ steps.v.outputs.tag }}.apk
