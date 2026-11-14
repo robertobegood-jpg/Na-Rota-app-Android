@@ -25,10 +25,24 @@ jobs:
       - uses: gradle/actions/setup-gradle@v4
 
       - name: Testes do núcleo (otimizador, dados, Pix)
-        run: ./gradlew testDebugUnitTest --stacktrace
+        run: |
+          set -o pipefail
+          if ! ./gradlew testDebugUnitTest --stacktrace 2>&1 | tee gradle.log; then
+            # Mostra o motivo da falha nas anotações (visíveis sem login)
+            msg=$(grep -E -A12 'What went wrong|FAILED|^e: |Exception' gradle.log | head -80 | sed -e 's/%/%25/g' -e 's/\r//g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=Falha no Gradle::$msg"
+            exit 1
+          fi
 
       - name: APK de teste (debug)
-        run: ./gradlew assembleDebug --stacktrace
+        run: |
+          set -o pipefail
+          if ! ./gradlew assembleDebug --stacktrace 2>&1 | tee gradle.log; then
+            # Mostra o motivo da falha nas anotações (visíveis sem login)
+            msg=$(grep -E -A12 'What went wrong|FAILED|^e: |Exception' gradle.log | head -80 | sed -e 's/%/%25/g' -e 's/\r//g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=Falha no Gradle::$msg"
+            exit 1
+          fi
 
       - name: Preparar assinatura
         if: ${{ env.KEYSTORE_BASE64 != '' }}
@@ -41,7 +55,14 @@ jobs:
           KEYSTORE_PASSWORD: ${{ secrets.KEYSTORE_PASSWORD }}
           KEY_ALIAS: ${{ secrets.KEY_ALIAS }}
           KEY_PASSWORD: ${{ secrets.KEY_PASSWORD }}
-        run: ./gradlew assembleRelease --stacktrace
+        run: |
+          set -o pipefail
+          if ! ./gradlew assembleRelease --stacktrace 2>&1 | tee gradle.log; then
+            # Mostra o motivo da falha nas anotações (visíveis sem login)
+            msg=$(grep -E -A12 'What went wrong|FAILED|^e: |Exception' gradle.log | head -80 | sed -e 's/%/%25/g' -e 's/\r//g' | sed ':a;N;$!ba;s/\n/%0A/g')
+            echo "::error title=Falha no Gradle::$msg"
+            exit 1
+          fi
 
       - uses: actions/upload-artifact@v4
         with:
