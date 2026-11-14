@@ -16,7 +16,7 @@ fun segredo(nome: String): String? =
 
 // Igual aos outros apps: basta KEYSTORE_BASE64 + KEYSTORE_PASSWORD. O alias é lido do próprio arquivo
 // e a senha da chave é a mesma do arquivo (KEY_ALIAS e KEY_PASSWORD são opcionais).
-fun primeiroAlias(arquivo: File, senha: String): String? = runCatching {
+fun primeiroAlias(arquivo: java.io.File, senha: String): String? = runCatching {
     val ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType())
     arquivo.inputStream().use { ks.load(it, senha.toCharArray()) }
     ks.aliases().toList().firstOrNull()
