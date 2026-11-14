@@ -1,0 +1,12 @@
+FONTES DO SISTEMA OFICINA
+
+Copie para esta pasta os mesmos arquivos de fonte usados nos outros apps
+(Em Dia, Compensa?, Corrida Particular). O app procura pelo começo do nome:
+
+  Archivo...            ex.: Archivo-VariableFont_wdth,wght.ttf
+  Inter...              ex.: Inter-VariableFont_opsz,wght.ttf
+  InstrumentSerif...    ex.: InstrumentSerif-Italic.ttf
+  GeistMono...          ex.: GeistMono-VariableFont_wght.ttf
+
+Formatos aceitos: .ttf ou .otf (o Android não lê .woff).
+Se faltar alguma, o app usa a fonte do sistema no lugar e funciona normalmente.

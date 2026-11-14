@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- linha da rota -->
+    <path
+        android:pathData="M36,70 L52,46 L72,58"
+        android:strokeColor="#2D81FF"
+        android:strokeWidth="3"
+        android:strokeLineJoin="miter"
+        android:fillColor="#00000000" />
+    <!-- paradas (quadradas) -->
+    <path android:fillColor="#F2F1EE" android:pathData="M31,65h10v10h-10z" />
+    <path android:fillColor="#F2F1EE" android:pathData="M47,41h10v10h-10z" />
+    <path android:fillColor="#2D81FF" android:pathData="M66,52h12v12h-12z" />
+    <!-- marcas de canto -->
+    <path
+        android:pathData="M30,30h8M30,30v8M78,30h-8M78,30v8M30,78h8M30,78v-8M78,78h-8M78,78v-8"
+        android:strokeColor="#66F2F1EE"
+        android:strokeWidth="1.5"
+        android:fillColor="#00000000" />
+</vector>
