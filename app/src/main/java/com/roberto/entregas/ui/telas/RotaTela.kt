@@ -25,6 +25,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.roberto.entregas.core.Entrega
@@ -89,7 +90,7 @@ fun RotaTela(
                     Triple("${rota.pendentes.size}", "Pendentes", null),
                     Triple("${rota.entregues}", "Entregues", c.verde),
                     Triple(Texto.km(rota.kmEstimado), "Km est.", null),
-                    Triple(Texto.duracao(rota.minutosEstimados), "Tempo est.", null)
+                    Triple(Texto.duracao(rota.minutosEstimados), "Tempo", null)
                 ),
                 Modifier.padding(horizontal = 16.dp)
             )
@@ -134,7 +135,7 @@ fun RotaTela(
         }
 
         if (mostrarMapa && marcadores.isNotEmpty()) {
-            Box(Modifier.fillMaxWidth().height(220.dp).padding(horizontal = 16.dp).border(1.dp, c.line)) {
+            Box(Modifier.fillMaxWidth().height(220.dp).padding(horizontal = 16.dp).border(1.dp, c.line).clipToBounds()) {
                 MapaRota(
                     rota.inicio, marcadores, Modifier.fillMaxSize(),
                     rotuloPartida = if (rota.partida != null) "P" else "EU"

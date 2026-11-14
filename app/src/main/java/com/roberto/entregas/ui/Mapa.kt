@@ -3,6 +3,8 @@ package com.roberto.entregas.ui
 import android.content.Context
 import android.graphics.Bitmap
 import android.graphics.Canvas
+import android.graphics.ColorMatrix
+import android.graphics.ColorMatrixColorFilter
 import android.graphics.Paint
 import android.graphics.Typeface
 import android.graphics.drawable.BitmapDrawable
@@ -10,6 +12,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.toArgb
 import androidx.compose.ui.platform.LocalContext
@@ -27,7 +30,6 @@ import org.osmdroid.views.MapView
 import org.osmdroid.views.overlay.CopyrightOverlay
 import org.osmdroid.views.overlay.Marker
 import org.osmdroid.views.overlay.Polyline
-import org.osmdroid.views.overlay.TilesOverlay
 import java.io.File
 
 data class MarcadorMapa(
@@ -87,7 +89,8 @@ fun MapaRota(
 
     AndroidView(
         factory = { mapa },
-        modifier = modifier,
+        // Sem o recorte, o osmdroid desenha fora da caixa e cobre o resto da tela.
+        modifier = modifier.clipToBounds(),
         update = { m -> desenhar(m, ctx, c, partida, rotuloPartida, marcadores, estado) }
     )
 }
@@ -102,7 +105,7 @@ private fun desenhar(
     estado: EstadoMapa
 ) {
     m.overlays.clear()
-    m.overlayManager.tilesOverlay.setColorFilter(if (c.escuro) TilesOverlay.INVERT_COLORS else null)
+    m.overlayManager.tilesOverlay.setColorFilter(filtroMonocromatico(c.escuro))
 
     val dens = ctx.resources.displayMetrics.density
     val pend = marcadores.filter { it.status == Status.PENDENTE }
@@ -165,6 +168,25 @@ private fun desenhar(
         }
     }
     m.invalidate()
+}
+
+/**
+ * Deixa o mapa do OpenStreetMap em tons de cinza, sem as áreas coloridas (parques, represas,
+ * áreas de proteção), para destacar só ruas, quarteirões e nomes. No escuro, inverte os tons.
+ */
+private fun filtroMonocromatico(escuro: Boolean): ColorMatrixColorFilter {
+    val cinza = ColorMatrix().apply { setSaturation(0f) }
+    val (fator, desvio) = if (escuro) -0.9775f to 230f else 0.9f to 30f
+    val tom = ColorMatrix(
+        floatArrayOf(
+            fator, 0f, 0f, 0f, desvio,
+            0f, fator, 0f, 0f, desvio,
+            0f, 0f, fator, 0f, desvio,
+            0f, 0f, 0f, 1f, 0f
+        )
+    )
+    cinza.postConcat(tom)
+    return ColorMatrixColorFilter(cinza)
 }
 
 /** Quadrado com número (cantos retos, como no Oficina). */
