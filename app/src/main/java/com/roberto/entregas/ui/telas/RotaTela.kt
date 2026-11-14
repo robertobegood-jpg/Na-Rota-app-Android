@@ -28,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import com.roberto.entregas.core.Entrega
+import com.roberto.entregas.core.Operacoes
 import com.roberto.entregas.core.Rota
 import com.roberto.entregas.core.Status
 import com.roberto.entregas.core.Texto
@@ -44,6 +45,11 @@ import com.roberto.entregas.ui.componentes.TipoBotao
 import com.roberto.entregas.ui.componentes.Vazio
 import com.roberto.entregas.ui.componentes.linhaBase
 import com.roberto.entregas.ui.tema.Oficina
+import java.text.SimpleDateFormat
+import java.util.Date
+import java.util.Locale
+
+private val hora = SimpleDateFormat("HH:mm", Locale("pt", "BR"))
 
 @Composable
 fun RotaTela(
@@ -66,6 +72,7 @@ fun RotaTela(
     var confirmarLimpar by remember { mutableStateOf(false) }
 
     val proximaId = rota.proxima?.id
+    val kmPrimeira = Operacoes.kmAteProxima(rota, null)
     val marcadores = rota.entregas.mapIndexedNotNull { i, e ->
         e.coordenada?.let { MarcadorMapa(i + 1, it, e.status, e.urgente, e.id == proximaId) }
     }
@@ -97,7 +104,11 @@ fun RotaTela(
             Column(Modifier.weight(1f)) {
                 Hud("Partida")
                 Text(
-                    rota.partidaRotulo.ifBlank { "Minha localização atual" },
+                    when {
+                        rota.partida != null -> rota.partidaRotulo.ifBlank { "Endereço fixo" }
+                        rota.origemEm != null -> "Onde você estava às " + hora.format(Date(rota.origemEm))
+                        else -> "Onde você estiver ao otimizar"
+                    },
                     style = Oficina.tipos.bodySm, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis
                 )
             }
@@ -108,9 +119,26 @@ fun RotaTela(
             Modifier.padding(horizontal = 16.dp)
         )
 
+        // Orientação: por onde a rota começa
+        val primeira = rota.proxima
+        if (rota.otimizada && primeira != null && kmPrimeira != null) {
+            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                Ponto(c.accent)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    "Comece por ${primeira.endereco} · ~${Texto.km(kmPrimeira)} da partida",
+                    style = Oficina.tipos.bodySm, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis
+                )
+            }
+            Spacer(Modifier.height(4.dp))
+        }
+
         if (mostrarMapa && marcadores.isNotEmpty()) {
             Box(Modifier.fillMaxWidth().height(220.dp).padding(horizontal = 16.dp).border(1.dp, c.line)) {
-                MapaRota(rota.partida, marcadores, Modifier.fillMaxSize())
+                MapaRota(
+                    rota.inicio, marcadores, Modifier.fillMaxSize(),
+                    rotuloPartida = if (rota.partida != null) "P" else "EU"
+                )
             }
             Spacer(Modifier.height(8.dp))
         }

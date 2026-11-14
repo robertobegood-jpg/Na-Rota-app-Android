@@ -4,7 +4,7 @@ App Android de rotas para entregador autônomo. Você cadastra as entregas, o ap
 
 Gratuito, sem anúncios, sem conta e sem chave de API. Visual no sistema de design **Oficina**.
 
-## O que já faz (versão 0.1)
+## O que já faz (versão 0.2)
 
 **Cadastro**
 - Endereço com busca automática enquanto você digita (Geocoder do Android; se não achar, usa o Photon/OpenStreetMap)
@@ -15,7 +15,9 @@ Gratuito, sem anúncios, sem conta e sem chave de API. Visual no sistema de desi
 **Otimização**
 - Calculada no celular, sem internet: vizinho mais próximo + 2-opt + Or-opt
 - Nos testes fica, em média, 0,02% acima da rota perfeita (pior caso 2,3%); 200 paradas em ~55 ms no computador
-- Urgentes primeiro, partida fixa ou localização atual, opção de voltar ao ponto de partida
+- Sempre parte de onde você está (ou de uma partida fixa); sem localização, o app pede antes de otimizar
+- Mostra no mapa de onde a rota sai e qual a primeira parada, com a distância
+- Urgentes primeiro e opção de voltar ao ponto de partida (começando pelo lado mais perto)
 - Estimativa de km e tempo (linha reta × 1,35 de fator de ruas, 25 km/h, 3 min por parada)
 - Mapa OpenStreetMap com as paradas numeradas e a ordem de visita (escuro no tema escuro)
 - Ajuste manual da ordem com ▲ ▼
@@ -56,7 +58,7 @@ servicos/   busca de endereço, localização, GPS/telefone/WhatsApp
 ui/         tema Oficina, componentes, mapa, telas e ViewModel
 ```
 
-Testes: `./gradlew testDebugUnitTest` (18 testes do núcleo).
+Testes: `./gradlew testDebugUnitTest` (21 testes do núcleo).
 
 ## Próximas etapas sugeridas
 - Comprovante de entrega (foto, nome de quem recebeu, assinatura)

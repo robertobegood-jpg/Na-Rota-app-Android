@@ -123,7 +123,13 @@ object Otimizador {
             melhorou = doisOpt(seq, primeiro, ultimo, d) or orOpt(seq, primeiro, ultimo, d)
             voltas++
         }
-        return seq.subList(primeiro, ultimo + 1).toList()
+        val caminho = seq.subList(primeiro, ultimo + 1).toList()
+        // Ida e volta ao mesmo ponto: os dois sentidos têm o mesmo tamanho.
+        // Fica com o que começa pela parada mais perto da partida.
+        if (inicio != null && fim != null && inicio == fim && caminho.size > 1 &&
+            d[noInicio][caminho.last()] < d[noInicio][caminho.first()] - 1e-9
+        ) return caminho.reversed()
+        return caminho
     }
 
     private fun vizinhoMaisProximo(origem: Int, n: Int, d: Array<DoubleArray>, incluirOrigem: Boolean = false): IntArray {

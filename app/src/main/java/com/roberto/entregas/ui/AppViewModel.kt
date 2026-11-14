@@ -48,6 +48,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
     private val _posicao = MutableStateFlow<Coordenada?>(null)
     val posicao: StateFlow<Coordenada?> = _posicao.asStateFlow()
 
+    private var posicaoEm = 0L
+
+    /** Motivo de não ter conseguido a origem ao otimizar (null = sem problema). */
+    private val _semOrigem = MutableStateFlow<String?>(null)
+    val semOrigem: StateFlow<String?> = _semOrigem.asStateFlow()
+    fun fecharSemOrigem() { _semOrigem.value = null }
+
     private val _otimizando = MutableStateFlow(false)
     val otimizando: StateFlow<Boolean> = _otimizando.asStateFlow()
 
@@ -87,8 +94,13 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
 
     suspend fun lerPosicao(): Coordenada? {
         val p = Localizacao.atual(getApplication())
-        if (p != null) _posicao.value = p
-        return p ?: _posicao.value
+        if (p != null) {
+            _posicao.value = p
+            posicaoEm = System.currentTimeMillis()
+            return p
+        }
+        // Só reaproveita a última posição se ela for recente.
+        return _posicao.value?.takeIf { System.currentTimeMillis() - posicaoEm < 10 * 60_000 }
     }
 
     fun atualizarPosicao() {
@@ -107,7 +119,17 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
             try {
                 val antes = _dados.value.atual
                 val origem = if (antes.partida == null) lerPosicao() else _posicao.value
-                val nova = withContext(Dispatchers.Default) { Operacoes.otimizar(antes, origem) }
+                if (antes.partida == null && origem == null) {
+                    // Sem saber de onde o entregador sai, a ordem pode começar pela ponta errada.
+                    val app = getApplication<Application>()
+                    _semOrigem.value = when {
+                        !Localizacao.temPermissao(app) -> "permissao"
+                        Localizacao.desligada(app) -> "desligada"
+                        else -> "sinal"
+                    }
+                    return@launch
+                }
+                val nova = withContext(Dispatchers.Default) { Operacoes.otimizar(antes, origem, System.currentTimeMillis()) }
                 val atual = _dados.value.atual
                 if (atual.id == antes.id && atual.entregas == antes.entregas && atual.partida == antes.partida &&
                     atual.voltarAoInicio == antes.voltarAoInicio
@@ -117,8 +139,8 @@ class AppViewModel(app: Application) : AndroidViewModel(app) {
                     avisar(
                         when {
                             semLocal > 0 -> "Rota otimizada. $semLocal sem local ficaram no fim: corrija o endereço."
-                            antes.partida == null && origem == null -> "Rota otimizada sem a sua localização: começa pela melhor parada."
-                            else -> "Rota otimizada."
+                            antes.partida == null -> "Rota otimizada a partir de onde você está."
+                            else -> "Rota otimizada a partir da partida fixa."
                         }
                     )
                 } else {

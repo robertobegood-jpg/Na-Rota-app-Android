@@ -141,22 +141,36 @@ object Localizacao {
         val ctx = context.applicationContext
         if (!temPermissao(ctx)) return null
         val lm = ctx.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return null
-        val provedores = listOf(LocationManager.NETWORK_PROVIDER, LocationManager.GPS_PROVIDER)
+        val provedores = listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
             .filter { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) }
         if (provedores.isEmpty()) return null
 
         fun ultimas() = provedores.mapNotNull { runCatching { lm.getLastKnownLocation(it) }.getOrNull() }
+        fun idadeMs(l: Location) = System.currentTimeMillis() - l.time
 
-        val recente = ultimas().filter { System.currentTimeMillis() - it.time < 2 * 60_000 }.maxByOrNull { it.time }
+        // 1) Leitura de agora há pouco e precisa: usa direto.
+        val recente = ultimas()
+            .filter { idadeMs(it) < 2 * 60_000 && (!it.hasAccuracy() || it.accuracy <= 150f) }
+            .maxByOrNull { it.time }
         if (recente != null) return Coordenada(recente.latitude, recente.longitude)
 
-        var fresca: Location? = null
+        // 2) Pede uma leitura nova: GPS primeiro (mais preciso), depois a rede.
         for (p in provedores) {
-            fresca = withTimeoutOrNull(10_000) { umaLeitura(ctx, lm, p) }
-            if (fresca != null) break
+            val tempo = if (p == LocationManager.GPS_PROVIDER) 15_000L else 10_000L
+            val nova = withTimeoutOrNull(tempo) { umaLeitura(ctx, lm, p) }
+            if (nova != null) return Coordenada(nova.latitude, nova.longitude)
         }
-        val loc = fresca ?: ultimas().maxByOrNull { it.time } ?: return null
-        return Coordenada(loc.latitude, loc.longitude)
+
+        // 3) Última conhecida, só se for dos últimos 10 minutos. Mais velha que isso pode ser de outro bairro.
+        val ultima = ultimas().filter { idadeMs(it) < 10 * 60_000 }.maxByOrNull { it.time } ?: return null
+        return Coordenada(ultima.latitude, ultima.longitude)
+    }
+
+    /** true se o GPS e a localização por rede estão desligados no aparelho. */
+    fun desligada(context: Context): Boolean {
+        val lm = context.getSystemService(Context.LOCATION_SERVICE) as? LocationManager ?: return true
+        return listOf(LocationManager.GPS_PROVIDER, LocationManager.NETWORK_PROVIDER)
+            .none { runCatching { lm.isProviderEnabled(it) }.getOrDefault(false) }
     }
 
     @SuppressLint("MissingPermission")
@@ -210,6 +224,12 @@ object Acoes {
                 Toast.makeText(ctx, "${app.rotulo} não encontrado. Escolha outro app.", Toast.LENGTH_SHORT).show()
             }
             if (!abrir(ctx, escolher)) Toast.makeText(ctx, "Nenhum app de mapa instalado.", Toast.LENGTH_LONG).show()
+        }
+    }
+
+    fun configuracoesLocalizacao(ctx: Context) {
+        if (!abrir(ctx, Intent(android.provider.Settings.ACTION_LOCATION_SOURCE_SETTINGS))) {
+            abrir(ctx, Intent(android.provider.Settings.ACTION_SETTINGS))
         }
     }
 

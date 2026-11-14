@@ -20,7 +20,7 @@ object Operacoes {
      *
      * @param origemAtual localização do aparelho, usada quando a rota não tem partida fixa
      */
-    fun otimizar(rota: Rota, origemAtual: Coordenada?): Rota {
+    fun otimizar(rota: Rota, origemAtual: Coordenada?, agora: Long = 0L): Rota {
         val concluidas = rota.entregas.filter { it.status != Status.PENDENTE }
             .sortedBy { it.concluidaEm ?: Long.MAX_VALUE }
         val comLocal = rota.entregas.filter { it.status == Status.PENDENTE && it.temLocal }
@@ -35,8 +35,15 @@ object Operacoes {
             voltarAoInicio = voltar
         )
         val ordenadas = ordem.map { comLocal[it] }
+        val usouLocalizacao = rota.partida == null && origemAtual != null
         return comEstimativa(
-            rota.copy(entregas = concluidas + ordenadas + semLocal, otimizada = true),
+            rota.copy(
+                entregas = concluidas + ordenadas + semLocal,
+                otimizada = true,
+                origemLat = if (usouLocalizacao) origemAtual!!.lat else rota.origemLat,
+                origemLon = if (usouLocalizacao) origemAtual!!.lon else rota.origemLon,
+                origemEm = if (usouLocalizacao) agora else rota.origemEm
+            ),
             origemAtual
         )
     }
@@ -44,10 +51,17 @@ object Operacoes {
     /** Recalcula km e tempo das pendentes na ordem atual da lista. */
     fun comEstimativa(rota: Rota, origemAtual: Coordenada?): Rota {
         val pend = rota.pendentes.mapNotNull { it.coordenada }
-        val partida = rota.partida ?: origemAtual
+        val partida = rota.partida ?: origemAtual ?: rota.origem
         val km = Otimizador.comprimentoKm(partida, pend, rota.voltarAoInicio && partida != null) * Otimizador.FATOR_RUAS
         val minutos = (km / Otimizador.VELOCIDADE_MEDIA_KMH * 60.0).roundToInt() + pend.size * Otimizador.MINUTOS_POR_PARADA
         return rota.copy(kmEstimado = km, minutosEstimados = minutos)
+    }
+
+    /** Distância estimada (km, com fator de ruas) do início da rota até a próxima parada. */
+    fun kmAteProxima(rota: Rota, origemAtual: Coordenada?): Double? {
+        val ini = rota.partida ?: origemAtual ?: rota.origem ?: return null
+        val alvo = rota.proxima?.coordenada ?: return null
+        return Otimizador.distanciaKm(ini, alvo) * Otimizador.FATOR_RUAS
     }
 
     fun adicionar(rota: Rota, novas: List<Entrega>): Rota =

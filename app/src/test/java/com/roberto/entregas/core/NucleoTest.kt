@@ -208,6 +208,48 @@ class NucleoTest {
         assertEquals(0, d2.historico.size)
     }
 
+
+    // ---------------------------------------------------------------- origem do entregador
+
+    @Test
+    fun comOrigemComecaPelaMaisPerto() {
+        val perto = perto(0.0, 1.0)
+        val longe = perto(0.0, -5.0)
+        // a ordem de cadastro não pode influir
+        assertEquals(listOf(1, 0), Otimizador.ordenar(sp, listOf(longe, perto)))
+        assertEquals(listOf(0, 1), Otimizador.ordenar(sp, listOf(perto, longe)))
+    }
+
+    @Test
+    fun idaEVoltaComecaPeloLadoMaisPerto() {
+        val r = Random(21)
+        repeat(200) {
+            val n = r.nextInt(2, 12)
+            val pts = List(n) { perto(r.nextDouble(-10.0, 10.0), r.nextDouble(-10.0, 10.0)) }
+            val ordem = Otimizador.ordenar(sp, pts, voltarAoInicio = true)
+            val primeira = Otimizador.distanciaKm(sp, pts[ordem.first()])
+            val ultima = Otimizador.distanciaKm(sp, pts[ordem.last()])
+            assertTrue("começou pela ponta mais longe", primeira <= ultima + 1e-9)
+        }
+    }
+
+    @Test
+    fun otimizarGuardaAOrigemUsada() {
+        val rota = Rota(id = "r", criadaEm = 0, entregas = listOf(entrega("longe", 10.0), entrega("perto", 1.0)))
+        val o = Operacoes.otimizar(rota, sp, agora = 1234)
+        assertEquals(sp, o.origem)
+        assertEquals(sp, o.inicio)
+        assertEquals(1234L, o.origemEm)
+        assertEquals(1.0 * Otimizador.FATOR_RUAS, Operacoes.kmAteProxima(o, null)!!, 0.05)
+        // depois de marcar a primeira, a estimativa continua a partir da origem guardada
+        val depois = Operacoes.comEstimativa(Operacoes.marcarEntregue(o, "perto", 2000), null)
+        assertEquals(10.0 * Otimizador.FATOR_RUAS, depois.kmEstimado, 0.1)
+        // com partida fixa, a localização não é gravada como origem
+        val fixa = Operacoes.otimizar(rota.copy(partidaLat = sp.lat, partidaLon = sp.lon), perto(50.0, 50.0), agora = 9)
+        assertEquals(null, fixa.origem)
+        assertEquals(listOf("perto", "longe"), fixa.entregas.map { it.id })
+    }
+
     // ---------------------------------------------------------------- texto, json, pix
 
     @Test
@@ -250,6 +292,7 @@ class NucleoTest {
             atual = Rota(
                 id = "r1", criadaEm = 1731546000000, partidaRotulo = "Base \"central\"\nZona Sul",
                 partidaLat = -23.5, partidaLon = -46.6, voltarAoInicio = true, otimizada = true,
+                origemLat = -23.51, origemLon = -46.61, origemEm = 1731546000500,
                 kmEstimado = 12.75, minutosEstimados = 48,
                 entregas = listOf(
                     Entrega(

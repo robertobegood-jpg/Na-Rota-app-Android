@@ -13,6 +13,7 @@ import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.isSystemInDarkTheme
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
@@ -44,6 +45,9 @@ import com.roberto.entregas.servicos.Lugar
 import com.roberto.entregas.dados.Tema
 import com.roberto.entregas.ui.AppViewModel
 import com.roberto.entregas.ui.componentes.BarraInferior
+import com.roberto.entregas.ui.componentes.Botao
+import com.roberto.entregas.ui.componentes.Dialogo
+import com.roberto.entregas.ui.componentes.TipoBotao
 import com.roberto.entregas.ui.componentes.linhaTopo
 import com.roberto.entregas.ui.configurarMapa
 import com.roberto.entregas.ui.tema.Oficina
@@ -105,6 +109,7 @@ private fun App(vm: AppViewModel) {
     val aviso by vm.aviso.collectAsState()
     val desfazer by vm.desfazer.collectAsState()
     val posicao by vm.posicao.collectAsState()
+    val semOrigem by vm.semOrigem.collectAsState()
 
     var aba by rememberSaveable { mutableStateOf(0) }
     var pilha by remember { mutableStateOf(listOf<Sobreposta>()) }
@@ -230,6 +235,42 @@ private fun App(vm: AppViewModel) {
                     }
                     Sobreposta.Cafezinho -> CafezinhoTela(onVoltar = { fechar() })
                 }
+            }
+        }
+
+        semOrigem?.let { motivo ->
+            Dialogo(
+                titulo = "De onde você *sai*?",
+                onFechar = { vm.fecharSemOrigem() },
+                confirmar = {
+                    Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                        when (motivo) {
+                            "permissao" -> Botao("Permitir localização", {
+                                vm.fecharSemOrigem()
+                                pedirLocal.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.ACCESS_COARSE_LOCATION))
+                            }, Modifier.fillMaxWidth())
+                            "desligada" -> Botao("Ligar a localização", {
+                                vm.fecharSemOrigem()
+                                Acoes.configuracoesLocalizacao(ctx)
+                            }, Modifier.fillMaxWidth())
+                            else -> Botao("Tentar de novo", { vm.fecharSemOrigem(); vm.otimizar() }, Modifier.fillMaxWidth())
+                        }
+                        Botao("Fixar um endereço de partida", {
+                            vm.fecharSemOrigem()
+                            abrir(Sobreposta.Partida)
+                        }, Modifier.fillMaxWidth(), tipo = TipoBotao.SECUNDARIO)
+                        Botao("Cancelar", { vm.fecharSemOrigem() }, Modifier.fillMaxWidth(), tipo = TipoBotao.FANTASMA)
+                    }
+                }
+            ) {
+                Text(
+                    when (motivo) {
+                        "permissao" -> "A rota começa de onde você está, mas o app não tem permissão para ver a sua localização."
+                        "desligada" -> "A rota começa de onde você está, mas a localização do celular está desligada."
+                        else -> "Não deu para ler a sua localização agora. Vá para um lugar aberto e tente de novo, ou fixe o endereço de onde você sai."
+                    },
+                    style = Oficina.tipos.body, color = c.ink
+                )
             }
         }
 

@@ -55,7 +55,12 @@ private class EstadoMapa { var ultimaChave: String = "" }
  * No tema escuro os blocos do mapa são invertidos para combinar com o Oficina.
  */
 @Composable
-fun MapaRota(partida: Coordenada?, marcadores: List<MarcadorMapa>, modifier: Modifier = Modifier) {
+fun MapaRota(
+    partida: Coordenada?,
+    marcadores: List<MarcadorMapa>,
+    modifier: Modifier = Modifier,
+    rotuloPartida: String = "P"
+) {
     val ctx = LocalContext.current
     val c = Oficina.cores
     val estado = remember { EstadoMapa() }
@@ -83,7 +88,7 @@ fun MapaRota(partida: Coordenada?, marcadores: List<MarcadorMapa>, modifier: Mod
     AndroidView(
         factory = { mapa },
         modifier = modifier,
-        update = { m -> desenhar(m, ctx, c, partida, marcadores, estado) }
+        update = { m -> desenhar(m, ctx, c, partida, rotuloPartida, marcadores, estado) }
     )
 }
 
@@ -92,6 +97,7 @@ private fun desenhar(
     ctx: Context,
     c: CoresOficina,
     partida: Coordenada?,
+    rotuloPartida: String,
     marcadores: List<MarcadorMapa>,
     estado: EstadoMapa
 ) {
@@ -135,7 +141,7 @@ private fun desenhar(
     if (partida != null) {
         val p = Marker(m)
         p.position = GeoPoint(partida.lat, partida.lon)
-        p.icon = BitmapDrawable(ctx.resources, icone("P", c.bg.toArgb(), c.ink.toArgb(), c.ink.toArgb(), dens, false))
+        p.icon = BitmapDrawable(ctx.resources, icone(rotuloPartida, c.bg.toArgb(), c.ink.toArgb(), c.ink.toArgb(), dens, true))
         p.setAnchor(Marker.ANCHOR_CENTER, Marker.ANCHOR_CENTER)
         p.setOnMarkerClickListener { _, _ -> true }
         m.overlays.add(p)

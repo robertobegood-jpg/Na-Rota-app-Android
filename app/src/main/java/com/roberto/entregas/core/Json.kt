@@ -187,6 +187,7 @@ object Serializacao {
         "id" to r.id, "criadaEm" to r.criadaEm, "iniciadaEm" to r.iniciadaEm, "finalizadaEm" to r.finalizadaEm,
         "partidaRotulo" to r.partidaRotulo, "partidaLat" to r.partidaLat, "partidaLon" to r.partidaLon,
         "voltarAoInicio" to r.voltarAoInicio, "otimizada" to r.otimizada,
+        "origemLat" to r.origemLat, "origemLon" to r.origemLon, "origemEm" to r.origemEm,
         "kmEstimado" to r.kmEstimado, "minutosEstimados" to r.minutosEstimados,
         "entregas" to r.entregas.map { entrega(it) }
     )
@@ -208,6 +209,9 @@ object Serializacao {
         partidaLon = m.dbl("partidaLon"),
         voltarAoInicio = m["voltarAoInicio"] == true,
         otimizada = m["otimizada"] == true,
+        origemLat = m.dbl("origemLat"),
+        origemLon = m.dbl("origemLon"),
+        origemEm = m.long("origemEm"),
         kmEstimado = m.dbl("kmEstimado") ?: 0.0,
         minutosEstimados = (m.long("minutosEstimados") ?: 0L).toInt(),
         entregas = (m["entregas"] as? List<*>)?.mapNotNull { (it as? Map<*, *>)?.let { e -> entrega(e) } } ?: emptyList()

@@ -39,6 +39,10 @@ data class Rota(
     val partidaLat: Double? = null,
     val partidaLon: Double? = null,
     val voltarAoInicio: Boolean = false,
+    /** Localização do aparelho usada na última otimização (quando não há partida fixa). */
+    val origemLat: Double? = null,
+    val origemLon: Double? = null,
+    val origemEm: Long? = null,
     val otimizada: Boolean = false,
     val kmEstimado: Double = 0.0,
     val minutosEstimados: Int = 0,
@@ -47,6 +51,12 @@ data class Rota(
 ) {
     val partida: Coordenada?
         get() = if (partidaLat != null && partidaLon != null) Coordenada(partidaLat, partidaLon) else null
+
+    val origem: Coordenada?
+        get() = if (origemLat != null && origemLon != null) Coordenada(origemLat, origemLon) else null
+
+    /** De onde a rota sai: a partida fixa ou, sem ela, a localização lida ao otimizar. */
+    val inicio: Coordenada? get() = partida ?: origem
 
     val pendentes: List<Entrega> get() = entregas.filter { it.status == Status.PENDENTE }
     val entregues: Int get() = entregas.count { it.status == Status.ENTREGUE }
