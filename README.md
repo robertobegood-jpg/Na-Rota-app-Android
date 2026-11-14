@@ -40,8 +40,9 @@ Copie as quatro fontes para `app/src/main/assets/fonts/` (passo a passo em `LEIA
 ## Como compilar
 
 **GitHub Actions:** cada push na `main` roda os testes e gera o APK de teste em *Actions → Build → Artifacts*.
-Para o APK assinado, cadastre em *Settings → Secrets and variables → Actions*:
-`KEYSTORE_BASE64`, `KEYSTORE_PASSWORD`, `KEY_ALIAS`, `KEY_PASSWORD`.
+Para o APK assinado, cadastre em *Settings → Secrets and variables → Actions*
+`KEYSTORE_BASE64` e `KEYSTORE_PASSWORD` (a mesma chave dos outros apps). O alias é lido do arquivo;
+`KEY_ALIAS` e `KEY_PASSWORD` só são necessários se a sua chave tiver alias ou senha diferentes.
 Uma tag `v0.1.0` publica o APK assinado em *Releases*.
 
 **Android Studio:** *Open* nesta pasta, espere o Gradle sincronizar e clique em *Run*.

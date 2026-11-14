@@ -11,7 +11,16 @@ val assinatura = Properties().apply {
     val f = rootProject.file("keystore.properties")
     if (f.exists()) f.inputStream().use { load(it) }
 }
-fun segredo(nome: String): String? = System.getenv(nome) ?: assinatura.getProperty(nome)
+fun segredo(nome: String): String? =
+    System.getenv(nome)?.takeIf { it.isNotBlank() } ?: assinatura.getProperty(nome)?.takeIf { it.isNotBlank() }
+
+// Igual aos outros apps: basta KEYSTORE_BASE64 + KEYSTORE_PASSWORD. O alias é lido do próprio arquivo
+// e a senha da chave é a mesma do arquivo (KEY_ALIAS e KEY_PASSWORD são opcionais).
+fun primeiroAlias(arquivo: File, senha: String): String? = runCatching {
+    val ks = java.security.KeyStore.getInstance(java.security.KeyStore.getDefaultType())
+    arquivo.inputStream().use { ks.load(it, senha.toCharArray()) }
+    ks.aliases().toList().firstOrNull()
+}.getOrNull()
 
 android {
     namespace = "com.roberto.entregas"
@@ -26,13 +35,16 @@ android {
     }
 
     signingConfigs {
-        val arquivo = segredo("KEYSTORE_FILE")
-        if (arquivo != null && file(arquivo).exists()) {
+        val arquivo = segredo("KEYSTORE_FILE")?.let { file(it) }
+        val senha = segredo("KEYSTORE_PASSWORD")
+        if (arquivo != null && arquivo.exists() && senha != null) {
+            val alias = segredo("KEY_ALIAS") ?: primeiroAlias(arquivo, senha)
+                ?: throw GradleException("Não deu para abrir a chave de assinatura: confira KEYSTORE_PASSWORD.")
             create("release") {
-                storeFile = file(arquivo)
-                storePassword = segredo("KEYSTORE_PASSWORD")
-                keyAlias = segredo("KEY_ALIAS")
-                keyPassword = segredo("KEY_PASSWORD")
+                storeFile = arquivo
+                storePassword = senha
+                keyAlias = alias
+                keyPassword = segredo("KEY_PASSWORD") ?: senha
             }
         }
     }
