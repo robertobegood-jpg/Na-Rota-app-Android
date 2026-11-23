@@ -59,6 +59,7 @@ import com.roberto.entregas.ui.telas.EditarEntregaTela
 import com.roberto.entregas.ui.telas.EntregarTela
 import com.roberto.entregas.ui.telas.HistoricoTela
 import com.roberto.entregas.ui.telas.MaisTela
+import com.roberto.entregas.ui.telas.MapaCheioTela
 import com.roberto.entregas.ui.telas.PartidaTela
 import com.roberto.entregas.ui.telas.RotaTela
 import kotlinx.coroutines.delay
@@ -73,6 +74,7 @@ sealed interface Sobreposta {
     data object Partida : Sobreposta
     data class Historico(val id: String) : Sobreposta
     data object Cafezinho : Sobreposta
+    data object Mapa : Sobreposta
 }
 
 class MainActivity : ComponentActivity() {
@@ -162,6 +164,7 @@ private fun App(vm: AppViewModel) {
                             mostrarMapa = config.mostrarMapa,
                             otimizando = otimizando,
                             onMostrarMapa = { vm.mudarConfig(config.copy(mostrarMapa = it)) },
+                            onAbrirMapa = { abrir(Sobreposta.Mapa) },
                             onOtimizar = { vm.otimizar() },
                             onAdicionar = { abrir(Sobreposta.Editar(null)) },
                             onColar = { abrir(Sobreposta.Colar) },
@@ -234,6 +237,7 @@ private fun App(vm: AppViewModel) {
                         else DetalheHistoricoTela(r, onApagar = { vm.apagarDoHistorico(r.id); fechar() }, onVoltar = { fechar() })
                     }
                     Sobreposta.Cafezinho -> CafezinhoTela(onVoltar = { fechar() })
+                    Sobreposta.Mapa -> MapaCheioTela(rota, onVoltar = { fechar() })
                 }
             }
         }

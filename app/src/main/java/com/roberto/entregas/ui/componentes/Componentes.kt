@@ -44,6 +44,7 @@ import androidx.compose.ui.text.withStyle
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.em
+import androidx.compose.ui.unit.sp
 import com.roberto.entregas.ui.tema.Oficina
 
 /** Rótulo HUD: mono, maiúsculas, espaçado. */
@@ -259,7 +260,8 @@ fun CabecalhoAba(eyebrow: String, titulo: String, modifier: Modifier = Modifier)
 @Composable
 fun Indicador(valor: String, rotulo: String, modifier: Modifier = Modifier, cor: Color = Oficina.cores.ink) {
     Column(modifier.padding(horizontal = 10.dp, vertical = 10.dp)) {
-        Text(valor, style = Oficina.tipos.numero, color = cor, maxLines = 1, softWrap = false)
+        val estilo = if (valor.length > 4) Oficina.tipos.numero.copy(fontSize = 16.sp, lineHeight = 26.sp) else Oficina.tipos.numero
+        Text(valor, style = estilo, color = cor, maxLines = 1, softWrap = false)
         Text(
             rotulo.uppercase(), style = Oficina.tipos.hud.copy(letterSpacing = 0.04.em),
             color = Oficina.cores.muted, maxLines = 1, softWrap = false, overflow = TextOverflow.Clip

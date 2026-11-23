@@ -33,6 +33,7 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clipToBounds
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.FilterQuality
 import androidx.compose.ui.graphics.asImageBitmap
@@ -382,6 +383,40 @@ fun CafezinhoTela(onVoltar: () -> Unit) {
             }, Modifier.fillMaxWidth(), tipo = TipoBotao.FANTASMA)
             Spacer(Modifier.height(16.dp))
             Titulo("Obrigado.", estilo = Oficina.tipos.heading)
+        }
+    }
+}
+
+// =================================================================== mapa em tela cheia
+
+@Composable
+fun MapaCheioTela(rota: Rota, onVoltar: () -> Unit) {
+    val c = Oficina.cores
+    val proximaId = rota.proxima?.id
+    val marcadores = rota.entregas.mapIndexedNotNull { i, e ->
+        e.coordenada?.let { com.roberto.entregas.ui.MarcadorMapa(i + 1, it, e.status, e.urgente, e.id == proximaId) }
+    }
+    Column(Modifier.fillMaxSize()) {
+        CabecalhoInterno(
+            "Mapa · ${rota.pendentes.size} pendentes",
+            if (rota.partida != null) "Saindo da *partida*." else "Saindo de *você*.",
+            onVoltar
+        )
+        Box(Modifier.weight(1f).fillMaxWidth().clipToBounds()) {
+            com.roberto.entregas.ui.MapaRota(
+                rota.inicio, marcadores, Modifier.fillMaxSize(),
+                rotuloPartida = if (rota.partida != null) "P" else "EU"
+            )
+        }
+        rota.proxima?.let { p ->
+            Row(
+                Modifier.fillMaxWidth().background(c.bg).padding(16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Ponto(c.accent)
+                Spacer(Modifier.width(8.dp))
+                Text("Próxima: ${p.endereco}", style = Oficina.tipos.bodySm, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis)
+            }
         }
     }
 }

@@ -19,7 +19,7 @@ Gratuito, sem anúncios, sem conta e sem chave de API. Visual no sistema de desi
 - Mostra no mapa de onde a rota sai e qual a primeira parada, com a distância
 - Urgentes primeiro e opção de voltar ao ponto de partida (começando pelo lado mais perto)
 - Estimativa de km e tempo (linha reta × 1,35 de fator de ruas, 25 km/h, 3 min por parada)
-- Mapa OpenStreetMap monocromático (só ruas e nomes), com as paradas numeradas e a ordem de visita
+- Mapa OpenStreetMap monocromático (só ruas e nomes), com as paradas numeradas e a ordem de visita; a tela da rota rola inteira e o mapa abre em tela cheia
 - Ajuste manual da ordem com ▲ ▼
 
 **Modo entrega**

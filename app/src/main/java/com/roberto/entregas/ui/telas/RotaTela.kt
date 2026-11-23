@@ -1,5 +1,6 @@
 package com.roberto.entregas.ui.telas
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -58,6 +59,7 @@ fun RotaTela(
     mostrarMapa: Boolean,
     otimizando: Boolean,
     onMostrarMapa: (Boolean) -> Unit,
+    onAbrirMapa: () -> Unit,
     onOtimizar: () -> Unit,
     onAdicionar: () -> Unit,
     onColar: () -> Unit,
@@ -78,107 +80,138 @@ fun RotaTela(
         e.coordenada?.let { MarcadorMapa(i + 1, it, e.status, e.urgente, e.id == proximaId) }
     }
 
-    Column(Modifier.fillMaxSize()) {
-        CabecalhoAba(
-            eyebrow = "01/Rota · ${if (rota.otimizada) "otimizada" else "não otimizada"}",
-            titulo = if (rota.vazia) "Monte a sua *rota*." else "Sua *rota*."
-        )
-
-        if (!rota.vazia) {
-            FaixaIndicadores(
-                listOf(
-                    Triple("${rota.pendentes.size}", "Pendentes", null),
-                    Triple("${rota.entregues}", "Entregues", c.verde),
-                    Triple(Texto.km(rota.kmEstimado), "Km est.", null),
-                    Triple(Texto.duracao(rota.minutosEstimados), "Tempo", null)
-                ),
-                Modifier.padding(horizontal = 16.dp)
-            )
-            Spacer(Modifier.height(8.dp))
+    // Tudo numa lista só: cabeçalho, mapa e botões rolam junto com as entregas,
+    // então a lista de endereços sempre tem a tela inteira para aparecer.
+    LazyColumn(
+        Modifier.fillMaxSize(),
+        contentPadding = PaddingValues(bottom = 24.dp)
+    ) {
+        item(key = "cabecalho") {
+            Column(Modifier.fillMaxWidth()) {
+                CabecalhoAba(
+                    eyebrow = "01/Rota · ${if (rota.otimizada) "otimizada" else "não otimizada"}",
+                    titulo = if (rota.vazia) "Monte a sua *rota*." else "Sua *rota*."
+                )
+                if (!rota.vazia) {
+                    FaixaIndicadores(
+                        listOf(
+                            Triple("${rota.pendentes.size}", "Pendentes", null),
+                            Triple("${rota.entregues}", "Entregues", c.verde),
+                            Triple(Texto.km(rota.kmEstimado), "Km est.", null),
+                            Triple(Texto.duracao(rota.minutosEstimados), "Tempo", null)
+                        ),
+                        Modifier.padding(horizontal = 16.dp)
+                    )
+                    Spacer(Modifier.height(8.dp))
+                }
+            }
         }
 
-        // Partida e volta
-        Row(
-            Modifier.fillMaxWidth().clickable(onClick = onPartida).padding(horizontal = 16.dp, vertical = 8.dp),
-            verticalAlignment = Alignment.CenterVertically
-        ) {
-            Column(Modifier.weight(1f)) {
-                Hud("Partida")
-                Text(
-                    when {
-                        rota.partida != null -> rota.partidaRotulo.ifBlank { "Endereço fixo" }
-                        rota.origemEm != null -> "Onde você estava às " + hora.format(Date(rota.origemEm))
-                        else -> "Onde você estiver ao otimizar"
-                    },
-                    style = Oficina.tipos.bodySm, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis
+        item(key = "partida") {
+            Column(Modifier.fillMaxWidth()) {
+                Row(
+                    Modifier.fillMaxWidth().clickable(onClick = onPartida).padding(horizontal = 16.dp, vertical = 8.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Column(Modifier.weight(1f)) {
+                        Hud("Partida")
+                        Text(
+                            when {
+                                rota.partida != null -> rota.partidaRotulo.ifBlank { "Endereço fixo" }
+                                rota.origemEm != null -> "Onde você estava às " + hora.format(Date(rota.origemEm))
+                                else -> "Onde você estiver ao otimizar"
+                            },
+                            style = Oficina.tipos.bodySm, color = c.ink, maxLines = 1, overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Text("TROCAR", style = Oficina.tipos.botao, color = c.accentInk)
+                }
+                Interruptor(
+                    "Voltar ao ponto de partida", rota.voltarAoInicio, onVolta,
+                    Modifier.padding(horizontal = 16.dp)
                 )
+                // Orientação: por onde a rota começa
+                val primeira = rota.proxima
+                if (rota.otimizada && primeira != null && kmPrimeira != null) {
+                    Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
+                        Ponto(c.accent)
+                        Spacer(Modifier.width(8.dp))
+                        Text(
+                            "Comece por ${primeira.endereco} · ~${Texto.km(kmPrimeira)} da partida",
+                            style = Oficina.tipos.bodySm, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis
+                        )
+                    }
+                    Spacer(Modifier.height(4.dp))
+                }
             }
-            Text("TROCAR", style = Oficina.tipos.botao, color = c.accentInk)
-        }
-        Interruptor(
-            "Voltar ao ponto de partida", rota.voltarAoInicio, onVolta,
-            Modifier.padding(horizontal = 16.dp)
-        )
-
-        // Orientação: por onde a rota começa
-        val primeira = rota.proxima
-        if (rota.otimizada && primeira != null && kmPrimeira != null) {
-            Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 4.dp), verticalAlignment = Alignment.CenterVertically) {
-                Ponto(c.accent)
-                Spacer(Modifier.width(8.dp))
-                Text(
-                    "Comece por ${primeira.endereco} · ~${Texto.km(kmPrimeira)} da partida",
-                    style = Oficina.tipos.bodySm, color = c.ink, maxLines = 2, overflow = TextOverflow.Ellipsis
-                )
-            }
-            Spacer(Modifier.height(4.dp))
         }
 
         if (mostrarMapa && marcadores.isNotEmpty()) {
-            Box(Modifier.fillMaxWidth().height(220.dp).padding(horizontal = 16.dp).border(1.dp, c.line).clipToBounds()) {
-                MapaRota(
-                    rota.inicio, marcadores, Modifier.fillMaxSize(),
-                    rotuloPartida = if (rota.partida != null) "P" else "EU"
-                )
+            item(key = "mapa") {
+                Column(Modifier.fillMaxWidth()) {
+                    // Prévia: o toque abre o mapa em tela cheia. A camada por cima deixa o dedo
+                    // rolar a lista mesmo começando em cima do mapa.
+                    Box(
+                        Modifier.fillMaxWidth().height(180.dp).padding(horizontal = 16.dp)
+                            .border(1.dp, c.line).clipToBounds()
+                    ) {
+                        MapaRota(
+                            rota.inicio, marcadores, Modifier.fillMaxSize(),
+                            rotuloPartida = if (rota.partida != null) "P" else "EU"
+                        )
+                        Box(Modifier.fillMaxSize().clickable(onClick = onAbrirMapa))
+                        Text(
+                            "AMPLIAR MAPA",
+                            style = Oficina.tipos.botao, color = c.invertFg,
+                            modifier = Modifier.align(Alignment.TopEnd).padding(8.dp)
+                                .background(c.invertBg).padding(horizontal = 10.dp, vertical = 6.dp)
+                        )
+                    }
+                    Spacer(Modifier.height(8.dp))
+                }
             }
-            Spacer(Modifier.height(8.dp))
         }
 
-        // Ações
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            if (otimizando) {
-                Box(Modifier.weight(1f).height(48.dp), contentAlignment = Alignment.Center) {
-                    CircularProgressIndicator(Modifier.size(24.dp), color = c.ink, strokeWidth = 2.dp)
+        item(key = "acoes") {
+            Column(Modifier.fillMaxWidth()) {
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    if (otimizando) {
+                        Box(Modifier.weight(1f).height(48.dp), contentAlignment = Alignment.Center) {
+                            CircularProgressIndicator(Modifier.size(24.dp), color = c.ink, strokeWidth = 2.dp)
+                        }
+                    } else {
+                        Botao(
+                            "Otimizar rota", onOtimizar, Modifier.weight(1f),
+                            tipo = if (rota.otimizada) TipoBotao.SECUNDARIO else TipoBotao.PRIMARIO,
+                            habilitado = rota.pendentes.any { it.temLocal }
+                        )
+                    }
+                    Botao("Adicionar", onAdicionar, Modifier.weight(1f), tipo = TipoBotao.SECUNDARIO)
                 }
-            } else {
-                Botao(
-                    "Otimizar rota", onOtimizar, Modifier.weight(1f),
-                    tipo = if (rota.otimizada) TipoBotao.SECUNDARIO else TipoBotao.PRIMARIO,
-                    habilitado = rota.pendentes.any { it.temLocal }
-                )
-            }
-            Botao("Adicionar", onAdicionar, Modifier.weight(1f), tipo = TipoBotao.SECUNDARIO)
-        }
-        Spacer(Modifier.height(8.dp))
-        Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-            Botao("Colar lista", onColar, Modifier.weight(1f), tipo = TipoBotao.SECUNDARIO)
-            if (marcadores.isNotEmpty()) {
-                Botao(if (mostrarMapa) "Ocultar mapa" else "Ver mapa", { onMostrarMapa(!mostrarMapa) }, Modifier.weight(1f), tipo = TipoBotao.FANTASMA)
+                Spacer(Modifier.height(8.dp))
+                Row(Modifier.fillMaxWidth().padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Botao("Colar lista", onColar, Modifier.weight(1f), tipo = TipoBotao.SECUNDARIO)
+                    if (marcadores.isNotEmpty()) {
+                        Botao(if (mostrarMapa) "Ocultar mapa" else "Ver mapa", { onMostrarMapa(!mostrarMapa) }, Modifier.weight(1f), tipo = TipoBotao.FANTASMA)
+                    }
+                }
+                Spacer(Modifier.height(8.dp))
             }
         }
-        Spacer(Modifier.height(8.dp))
 
         if (rota.vazia) {
-            Vazio(
-                "Nenhuma *entrega* ainda.",
-                "Adicione os endereços um a um ou cole uma lista inteira, um endereço por linha. Depois toque em Otimizar rota."
-            )
+            item(key = "vazio") {
+                Vazio(
+                    "Nenhuma *entrega* ainda.",
+                    "Adicione os endereços um a um ou cole uma lista inteira, um endereço por linha. Depois toque em Otimizar rota."
+                )
+            }
         } else {
-            LazyColumn(
-                Modifier.weight(1f).fillMaxWidth(),
-                contentPadding = PaddingValues(start = 16.dp, end = 16.dp, bottom = 24.dp)
-            ) {
-                itemsIndexed(rota.entregas, key = { _, e -> e.id }) { i, e ->
+            item(key = "titulo-lista") {
+                Hud("Entregas · ${rota.entregas.size}", Modifier.padding(start = 16.dp, end = 16.dp, top = 8.dp))
+            }
+            itemsIndexed(rota.entregas, key = { _, e -> e.id }) { i, e ->
+                Box(Modifier.padding(horizontal = 16.dp)) {
                     LinhaEntrega(
                         posicao = i + 1, e = e, proxima = e.id == proximaId,
                         podeSubir = i > 0, podeDescer = i < rota.entregas.size - 1,
@@ -187,9 +220,11 @@ fun RotaTela(
                         onDescer = { onMover(e.id, 1) }
                     )
                 }
-                item {
+            }
+            item(key = "rodape") {
+                Column(Modifier.fillMaxWidth()) {
                     Spacer(Modifier.height(16.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(Modifier.padding(horizontal = 16.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                         Botao("Finalizar rota", { confirmarFinalizar = true }, Modifier.weight(1f), tipo = TipoBotao.SECUNDARIO)
                         Botao("Limpar tudo", { confirmarLimpar = true }, Modifier.weight(1f), tipo = TipoBotao.PERIGO)
                     }
